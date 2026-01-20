@@ -93,6 +93,6 @@ Le modèle permet de détecter efficacement les clients à risque
 
 Le seuil de décision peut être ajusté selon la politique de risque
 
-🏁 Conclusion
+Conclusion
 
 Ce projet démontre la capacité à transformer un modèle de machine learning en outil opérationnel d’aide à la décision crédit, intégrant à la fois performance, interprétabilité et logique métier.
