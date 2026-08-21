@@ -1,0 +1,81 @@
+# Fraud Detection — Détection de transactions frauduleuses par carte bancaire
+
+Modèle de détection de fraude sur des transactions bancaires, conçu pour repérer les cas frauduleux dans un jeu de données extrêmement déséquilibré (moins de 0,2 % de fraude).
+
+## Contexte
+
+La fraude par carte bancaire reste un enjeu direct pour toute institution financière : chaque transaction frauduleuse non détectée est une perte sèche, mais un système trop agressif qui bloque des clients légitimes coûte aussi cher en expérience client. Ce projet part de ce compromis et construit un modèle de détection à partir de transactions réelles anonymisées.
+
+## Problématique
+
+Peut-on repérer les transactions frauduleuses à partir des seules caractéristiques de la transaction, dans un contexte où la fraude représente moins de 0,2 % des cas — donc où un modèle naïf peut atteindre 99,8 % de précision juste en ne détectant jamais rien ?
+
+## Données
+
+- 284 807 transactions, 31 colonnes
+- Variables V1 à V28 : composantes anonymisées issues d'une transformation ACP (données bancaires sensibles, donc non exploitables telles quelles) ; plus Time et Amount en clair
+- Variable cible Class : 0 (transaction normale) / 1 (fraude)
+- Déséquilibre extrême : 492 fraudes sur 284 807 transactions, soit 0,17 % seulement
+
+## Démarche
+
+**1. Analyse exploratoire (EDA)**
+Premier réflexe face à un jeu de données de fraude : vérifier si le montant de la transaction est un signal fiable. Ce n'est pas le cas ici — la comparaison des montants entre transactions normales et frauduleuses (boxplot) montre que les fraudes ne portent pas systématiquement sur des montants plus élevés, ce qui reflète un comportement réaliste : les fraudeurs cherchent justement à limiter les montants pour ne pas se faire repérer. L'analyse temporelle confirme ce constat : les fraudes sont réparties sur toute la période, sans cycle particulier, contrairement aux transactions normales qui suivent des habitudes de paiement régulières. Conclusion pratique : une règle simple basée sur le montant ou l'heure n'aurait pas suffi, d'où le choix d'un modèle multivarié.
+
+**2. Préparation des données**
+Séparation train/test (75/25) avec stratification, indispensable vu le déséquilibre extrême de la cible — sans ça, le jeu de test pourrait se retrouver avec une proportion de fraude très différente du jeu d'entraînement. Normalisation des colonnes Time et Amount avec un StandardScaler (les colonnes V1-V28 étant déjà issues d'une ACP, donc déjà centrées-réduites).
+
+**3. Modélisation**
+Régression logistique avec pondération des classes (class_weight='balanced') — un choix délibéré : sur un déséquilibre à ce point extrême, un modèle non pondéré aurait simplement ignoré la classe minoritaire pour maximiser son score global. La régression logistique sert ici de référence interprétable avant d'aller vers des modèles plus complexes.
+
+**4. Évaluation et limite de l'accuracy**
+Avec un déséquilibre pareil, l'accuracy ne veut rien dire — un modèle qui ne détecte jamais la fraude afficherait déjà 99,8 % d'accuracy. Le focus a donc porté sur le recall et la precision de la classe fraude, et sur le compromis entre les deux.
+
+**5. Optimisation du seuil de décision**
+Le seuil par défaut (0.5) donnait un recall de 89 % mais une precision de seulement 6 % — beaucoup de fausses alertes. La recherche du seuil optimal via la courbe precision-recall (maximisation du F1) a permis de rééquilibrer les deux : recall à 78 %, precision à 86 %.
+
+## Résultats clés
+
+| Seuil | Precision (fraude) | Recall (fraude) | F1 (fraude) |
+|---|---|---|---|
+| 0.5 (défaut) | 0.06 | 0.89 | 0.12 |
+| Seuil optimisé | 0.86 | 0.78 | 0.82 |
+
+Sur le jeu de test (71 202 transactions), le modèle avec seuil optimisé détecte 96 fraudes sur 123 réelles, avec seulement 16 fausses alertes — contre des dizaines de fausses alertes au seuil par défaut. C'est ce compromis, pas le seuil par défaut de scikit-learn, qui rend le modèle utilisable en pratique : un système qui génère trop de fausses alertes finit par être ignoré par les équipes qui le surveillent.
+
+Les résultats (probabilité de fraude par transaction) ont été exportés en CSV pour être exploités dans un dashboard Power BI de suivi.
+
+## Limites
+
+- Le seuil optimal trouvé par maximisation du F1 est anormalement proche de 1 (0.9999999755) — un signal que la distribution des probabilités prédites est très concentrée près des extrêmes. Ça mérite d'être creusé avant de considérer ce seuil comme définitif : dans un cas réel, je le recalibrerais plutôt sur un coût métier explicite (coût d'une fraude non détectée vs coût d'une fausse alerte) que sur une métrique statistique seule.
+- Seule la régression logistique a été testée jusqu'ici ; un random forest ou un gradient boosting donnerait probablement une meilleure performance brute, à tester dans une itération suivante.
+- Les variables V1-V28 étant anonymisées par ACP, impossible de vérifier si les signaux ont un sens métier — le modèle reste donc une boîte grise sur ces colonnes, ce qui limite l'interprétabilité malgré le choix d'un modèle linéaire.
+- Dataset public, pas des transactions togolaises ou UEMOA réelles — les patterns de fraude peuvent différer selon le marché.
+
+## Comment lancer le projet
+
+```bash
+git clone <lien-du-repo>
+cd fraud-detection-model
+pip install -r requirements.txt
+jupyter notebook notebooks/fraud_detection.ipynb
+```
+
+## Structure du repo
+
+```
+├── data/                        # creditcard.csv (ou lien de téléchargement — fichier volumineux)
+├── notebooks/                    # EDA, modélisation, optimisation du seuil
+├── src/                           # fonctions réutilisables (preprocessing, évaluation)
+├── outputs/
+│   └── fraud_results_powerbi.csv # export pour dashboard Power BI
+├── visuals/                      # boxplot montants, distribution temporelle, matrice de confusion
+├── requirements.txt
+└── README.md
+```
+
+## Stack technique
+`Python` · `pandas` · `scikit-learn` (LogisticRegression, StandardScaler) · `matplotlib` / `seaborn` · `Power BI` (visualisation des résultats)
+
+## Auteur
+ALI Essonani (Credus) — [LinkedIn](https://linkedin.com/in/essonaniali) — aliessonani@gmail.com
