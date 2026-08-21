@@ -70,4 +70,4 @@ jupyter notebook notebooks/credit_scoring.ipynb
 `Python` · `pandas` · `scikit-learn` · `matplotlib` / `seaborn`
 
 ## Auteur
-Ali Essonani (Credus) — [LinkedIn](https://linkedin.com/in/essonaniali) — aliessonani@gmail.com
+ALI Essonani (Credus) — [LinkedIn](https://linkedin.com/in/essonaniali) — aliessonani@gmail.com
