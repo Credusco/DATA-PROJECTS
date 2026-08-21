@@ -61,4 +61,4 @@ Python · pandas · scikit-learn (RandomForest, LogisticRegression, SVC, Gradien
 
 Auteur
 
-ALI Essonani (Credusco) — LinkedIn — aliessonani@gmail.com
+ALI Essonani (Credusco) GIT — LinkedIn — aliessonani@gmail.com
